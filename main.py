@@ -9,7 +9,7 @@ def main():
         if inputted_js == 'quit':
             break
         else:
-            eval_value = parsing.eval_js(inputted_js, window)
+            eval_value = parsing.parse(inputted_js, window)
             print(eval_value)
 
 if __name__ == '__main__':
