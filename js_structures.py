@@ -1,16 +1,17 @@
 class Error(Exception):
-    pass
+    def __init__(self, error_type, description):
+        self.error_type = error_type
+        self.description = description
+        self.is_js_error = True
 
-class Expression:
-    def __init__(self, expr_str):
-        self.value = expr_str
+        super().__init__(f"{error_type}Error: {description}")
 
-class Assignment:
-    def __init__(self, var_name, expr_str):
-        self.var_name = var_name
-        self.var_value = Expression(expr_str)
+class Variable:
+    def __init__(self, init_type, name, value):
+        # dont allow reserved keywords
+        if name in ['quit', 'NaN', 'true', 'false', 'let', 'var', 'const']:
+            raise Error("Syntax", f"'{name}' is a reserved keyword")
 
-class Declaration:
-    def __init__(self, keyword, var_name, expr_str):
-        self.keyword = keyword
-        self.assignment = Assignment(var_name, expr_str)
+        self.init_type = init_type
+        self.name = name
+        self.value = value
