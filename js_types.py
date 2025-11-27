@@ -1,58 +1,84 @@
-class Primitive: # base for all other types, used to centralize str()
+class Primitive: # base for all other types, used to centralize some features
     def __init__(self, input_obj):
         self.value = input_obj
     
     def __str__(self):
         return str(self.value)
+    
+    class ConstructorError(Exception):
+        def __init__(self, attempted_type, input_obj, failure):
+            type_name = attempted_type.__class__.__name__
+
+            if failure == "invalid_literal":
+                error_msg = f"<{input_obj}> is not a valid JS {type_name} literal"
+            elif failure == "invalid_type":
+                error_msg = f"Cannot directly construct JS {type_name} from '{input_obj}' typeof '{type(input_obj)}'"
+            else:
+                error_msg = "Unknown construtor error"
+            
+            super().__init__(error_msg)
 
 class String(Primitive):
-    def __init__(self, input_obj): # Direct construction (no restrictions)
-        self.value = str(input_obj)
-
-    def __repr__(self):
-        return f"'{self.value}'"
+    def __init__(self, input_obj): # Direct construction 
+        if isinstance(input_obj, str):
+            if (
+                input_obj[0] in ["'", '"'] and
+                len(input_obj) >= 2 and
+                input_obj[0] == input_obj[-1] and
+                input_obj.count(input_obj[0]) == 2
+            ):
+                self.value = input_obj[1:-1]
+            else:
+                raise self.ConstructorError(self, input_obj, "invalid_literal")
+        elif isinstance(input_obj, Primitive):
+            self.value = str(input_obj) 
+        else:
+            raise self.ConstructorError(self, input_obj, "invalid_type")
 
 class Number(Primitive):
     def __init__(self, input_obj):
-        if isinstance(input_obj, str): # direct construction 
-            # this block cannot be passed unless the string can be made into a JS number
-            try:
-                float(input_obj)
-            except:
-                raise Exception(f"Cannot directly construct JS Number from '{input_obj}'")
-                
-            input_obj = String(input_obj) # if valid, the handling is the same as a JS String    
-                
-        # conversion from another JS type
-        if isinstance(input_obj, String): # number from String
-            str_value = input_obj.value
-
-            if ( # positive or negative int
-                str_value.isdigit() or 
-                str_value[0] == '-' and str_value[1:].isdigit()
-            ):
-                self.value = int(str_value)
-            elif ( # positive or negative decimal
-                str_value.count(".") == 1 and
-                (
-                    str_value.replace(".", "").isdigit() or 
-                    str_value[0] == '-' and str_value[1:].replace(".", "").isdigit()
-                ) and
-                str_value[0] != "." and
-                str_value[-1] != "."
-            ):
-                self.value = float(str_value)
-            else: # NaN otherwise
+        if isinstance(input_obj, str): # construction by literal 
+            if input_obj == "NaN":
                 self.value = "NaN"
-        elif isinstance(input_obj, Boolean): # number from Boolean
-            if input_obj.value:
-                self.value = 1
             else:
-                self.value = 0
-        elif isinstance(input_obj, Number): # no change
-            self.value = input_obj.value
-        else: # can't convert anything else to a number
-            self.value = "NaN"
+                attempted_build = Number(String(f"'{input_obj}'"))
+                
+                if attempted_build.value == "NaN":
+                    raise self.ConstructorError(self, input_obj, "invalid_literal")
+                else:
+                    self.value = attempted_build.value
+        elif isinstance(input_obj, Primitive): # conversion from another JS type    
+            if isinstance(input_obj, String): 
+                str_value = input_obj.value
+
+                if ( # positive or negative int
+                    str_value.isdigit() or 
+                    str_value[0] == '-' and str_value[1:].isdigit()
+                ):
+                    self.value = int(str_value)
+                elif ( # positive or negative decimal
+                    str_value.count(".") == 1 and
+                    (
+                        str_value.replace(".", "").isdigit() or 
+                        str_value[0] == '-' and str_value[1:].replace(".", "").isdigit()
+                    ) and
+                    str_value[0] != "." and
+                    str_value[-1] != "."
+                ):
+                    self.value = float(str_value)
+                else:
+                    self.value = "NaN"
+            elif isinstance(input_obj, Boolean): 
+                if input_obj.value:
+                    self.value = 1
+                else:
+                    self.value = 0
+            elif isinstance(input_obj, Number):
+                self.value = input_obj.value
+            else: # can't convert anything else to a number
+                self.value = "NaN"
+        else:
+            raise self.ConstructorError(self, input_obj, "invalid_type")
 
 class Boolean(Primitive):
     def __init__(self, input_obj):
@@ -62,8 +88,8 @@ class Boolean(Primitive):
             elif input_obj == "false":
                 self.value = False
             else:
-                raise Exception(f"Cannot directly construct JS Boolean from '{input_obj}'")
-        else: # conversion from another JS type
+                raise self.ConstructorError(self, input_obj, "invalid_literal")
+        elif isinstance(input_obj, Primitive): # conversion from another JS type
             if isinstance(input_obj, Number):
                 if (
                     input_obj.value == 0 or
@@ -81,26 +107,28 @@ class Boolean(Primitive):
                 self.value = input_obj.value
             else:
                 self.value = False
+        else:
+            raise self.ConstructorError(self, input_obj, "invalid_type")
 
     def __str__(self):
         return str(self.value).lower()
 
 class Undefined(Primitive):
     def __init__(self, input_obj):
-        if ( # only direct construction allowed (can't convert anything else to undefined)
-            isinstance(input_obj, str) and 
-            input_obj == 'undefined'
-        ):
-            self.value = input_obj
+        if isinstance(input_obj, str):
+            if input_obj == "undefined":
+                self.value = input_obj
+            else:
+                raise self.ConstructorError(self, input_obj, "invalid_literal")
         else:
-            raise Exception(f"Cannot directly construct JS Undefined from '{input_obj}'")
+            raise self.ConstructorError(self, input_obj, "invalid_type")
 
 class Null(Primitive):
     def __init__(self, input_obj):
-        if ( # only direct construction allowed (can't convert anything else to null)
-            isinstance(input_obj, str) and 
-            input_obj == 'null'
-        ):
-            self.value = input_obj
+        if isinstance(input_obj, str):
+            if input_obj == "null":
+                self.value = input_obj
+            else:
+                raise self.ConstructorError(self, input_obj, "invalid_literal")
         else:
-            raise Exception(f"Cannot directly construct JS Null from '{input_obj}'")
+            raise self.ConstructorError(self, input_obj, "invalid_type")
