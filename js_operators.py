@@ -87,7 +87,7 @@ def comparison(operand1, operand2, operator):
                 isinstance(operand2, js_types.Boolean)
             )
         ):
-            operand2 = js_types.Number(operand2.value)
+            operand2 = js_types.Number(operand2)
         elif (
             isinstance(operand2, js_types.Number) and
             (
@@ -95,7 +95,7 @@ def comparison(operand1, operand2, operator):
                 isinstance(operand1, js_types.Boolean)
             )
         ):
-            operand1 = js_types.Number(operand1.value)
+            operand1 = js_types.Number(operand1)
         elif (
             isinstance(operand1, js_types.Undefined) and
             isinstance(operand2, js_types.Null)
@@ -134,6 +134,7 @@ def comparison(operand1, operand2, operator):
         
         return result
     elif operator == "&&" or operator == "||": # logical comparison (both operands must be booleans)
+        # this splits from true JS, which returns the "truthy/falsy" operands here (not Booleans)
         operand1 = js_types.Boolean(operand1)
         operand2 = js_types.Boolean(operand2)
 
@@ -146,47 +147,3 @@ def comparison(operand1, operand2, operator):
         return result
     else:
         raise Exception(f"Invalid comparison operator '{operator}'")
-
-# mutation_symbols: ["!", "+", "-"]
-def mutation(operand, operator):
-    if operator == "!": # logical negation
-        operand = js_types.Boolean(operand)
-        operand.value = not operand.value
-        return operand
-    elif operator == "+": # convert to Number 
-        operand = js_types.Number(operand)
-        return operand
-    elif operator == "-": # numerical negation
-        operand = js_types.Number(operand)
-        return arithmetic(js_types.Number("-1"), operand, "*")
-    else:
-        raise Exception(f"Invalid mutation operator '{operator}'")
-
-# assignment_symbols: ["=", "+=", "-=", "*=", "/=", "%=", "**="] 
-def assignment(variable, value, operator):
-    if operator == "=":
-        variable.value = value
-        return value
-    elif operator in ["+=", "-=", "*=", "/=", "%=", "**="]:
-        result = arithmetic(variable.value, value, operator[:-1])
-        variable.value = result 
-        return result
-    else:
-        raise Exception(f"Invalid assignment operator '{operator}'")
-  
-# increment_symbols: ["++", "--"]
-def increment(variable, operator, is_right = True):
-    variable.value = js_types.Number(variable.value) # must convert to a number
-    pre_value = variable.value
-
-    if operator == "++":
-        variable.value = arithmetic(variable.value, js_types.Number("1"), "+")
-    elif operator == "--":
-        variable.value = arithmetic(variable.value, js_types.Number("1"), "-")
-    else:
-        raise Exception(f"Invalid increment operator '{operator}'")
-    
-    if is_right: # x++
-        return pre_value
-    else: # ++x
-        return variable.value
