@@ -132,3 +132,34 @@ class Null(Primitive):
                 raise self.ConstructorError(self, input_obj, "invalid_literal")
         else:
             raise self.ConstructorError(self, input_obj, "invalid_type")
+        
+class Auto(Primitive): # used for type detection (like 'auto' keyword in C++)
+    def __init__(self, input_obj):
+        if isinstance(input_obj, str):
+            if input_obj == "NaN":
+                self.__class__ = Number
+                self.value = Number(input_obj).value
+            elif input_obj in ["true", "false"]:
+                self.__class__ = Boolean
+                self.value = Boolean(input_obj).value
+            elif input_obj == "undefined":
+                self.__class__ = Undefined
+                self.value = Undefined(input_obj).value
+            elif input_obj == "null":
+                self.__class__ = Null
+                self.value = Null(input_obj).value
+            else: # if not a keyword literal
+                try:
+                    self.value = String(input_obj).value
+                    self.__class__ = String
+                except self.ConstructorError:
+                    try:
+                        self.value = Number(input_obj).value
+                        self.__class__ = Number
+                    except self.ConstructorError:
+                        raise self.ConstructorError(self, input_obj, "invalid_literal")
+        elif isinstance(input_obj, Primitive):
+            self.__class__ = input_obj.__class__
+            self.value = input_obj.value
+        else:
+            raise self.ConstructorError(self, input_obj, "invalid_type")
