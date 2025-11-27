@@ -25,7 +25,7 @@ class Number(Primitive):
                 
         # conversion from another JS type
         if isinstance(input_obj, String): # number from String
-            str_value = str(input_obj)
+            str_value = input_obj.value
 
             if ( # positive or negative int
                 str_value.isdigit() or 
@@ -81,6 +81,9 @@ class Boolean(Primitive):
                 self.value = input_obj.value
             else:
                 self.value = False
+
+    def __str__(self):
+        return str(self.value).lower()
 
 class Undefined(Primitive):
     def __init__(self, input_obj):
