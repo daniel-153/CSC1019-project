@@ -133,17 +133,12 @@ def comparison(operand1, operand2, operator):
             result.value = operand1.value <= operand2.value
         
         return result
-    elif operator == "&&" or operator == "||": # logical comparison (both operands must be booleans)
-        # this splits from true JS, which returns the "truthy/falsy" operands here (not Booleans)
-        operand1 = js_types.Boolean(operand1)
-        operand2 = js_types.Boolean(operand2)
+    elif operator == "&&" or operator == "||": # truthy/falsy (JS's version of logical comparison)
+        operand1_asbool = js_types.Boolean(operand1)
 
-        result = js_types.Boolean('false')
-        if operator == "&&":
-            result.value = (operand1.value and operand2.value)
-        elif operator == "||":
-            result.value = (operand1.value or operand2.value)
-
-        return result
+        if operator == "&&": # first falsy value
+            return operand1 if (not operand1_asbool.value) else operand2
+        elif operator == "||": # first truthy value
+            return operand1 if (operand1_asbool.value) else operand2
     else:
         raise Exception(f"Invalid comparison operator '{operator}'")
