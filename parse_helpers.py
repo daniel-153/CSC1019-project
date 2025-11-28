@@ -17,23 +17,7 @@ def isAssignment(js_str):
     return "=" in js_str
 
 def checkVariableName(name_str, window): # raises if name isn't valid
-    # checks basic rules
-    for idx, char in enumerate(name_str):
-        if idx == 0 and not (
-            char.isalpha() or
-            char == "_"
-        ): 
-            raise js_structures.Error("Syntax", "invalid first character in variable name")
-        elif not (
-            char.isalpha() or
-            char.isdigit() or
-            char == "_"
-        ): 
-            return js_structures.Error("Syntax", f"invalid character in variable name at index {idx}")
-    
-    # checks reserved keywords and if var already has been declared
-    if name_str in ['quit', 'NaN', 'true', 'false', 'let', 'var', 'const', 'undefined', 'null']:
-        raise js_structures.Error("Syntax", f"'{name_str}' is a reserved keyword")
+    js_structures.Variable('let', name_str, None) # validates name characters
     
     if name_str in window:
         raise js_structures.Error("Syntax", f"Identifier '{name_str}' has already been declared")
@@ -157,20 +141,11 @@ def matchStringToken(tkn_str):
         return 0
     
 def matchVariableToken(tkn_str):
-    for idx, char in enumerate(tkn_str):
-        if idx == 0 and not (
-            char.isalpha() or
-            char == "_"
-        ):
-            return 0
-        elif not (
-            char.isalpha() or
-            char.isdigit() or
-            char == "_"
-        ):
-            return 0
-
-    return 1
+    try:
+        js_structures.Variable('let', tkn_str, None)
+        return 1
+    except js_structures.Error:
+        return 0
 
 def numTokenMatches(tkn_str):
     return (
