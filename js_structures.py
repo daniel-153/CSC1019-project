@@ -80,22 +80,6 @@ class Operator(Token):
 class Parenthesis(Token): 
     def __init__(self, tkn_str):
         super().__init__(tkn_str)
+        
         if not tkn_str in ["(", ")"]:
             raise self.TokenError(self, tkn_str)
-        else:
-            self.type = "open" if tkn_str == "(" else "close"
-
-def detectToken(tkn_str):
-    match_found = False
-    for TokenType in [Identifier, Literal, Operator, Parenthesis]:
-        try:
-            matched_tkn = TokenType(tkn_str)
-            match_found = True
-            break
-        except Token.TokenError:
-            pass
-
-    if not match_found:
-        raise Error("Syntax", f"invalid token '{tkn_str}'")
-
-    return matched_tkn
