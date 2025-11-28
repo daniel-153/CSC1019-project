@@ -115,14 +115,15 @@ def matchFixedTokens(tkn_str, include = ["literal", "arithmetic", "comparison", 
     return matches
 
 def matchNumericalToken(tkn_str):
-    if ( # note string construction (type conversions like false -> 0 won't happen)
-        tkn_str[0] != "-" and (
-            js_types.Number(js_types.String(tkn_str)).value != "NaN" or 
-            tkn_str == "."
-        ) 
-    ):
+    if tkn_str == ".":
         return 1
-    else:
+    elif tkn_str[0] == "-" or tkn_str == "NaN":
+        return 0
+    
+    try:
+        js_types.Number(tkn_str)
+        return 1
+    except js_types.Primitive.ConstructorError:
         return 0
     
 def matchStringToken(tkn_str):
@@ -191,10 +192,11 @@ def tokenize(expr_str):
 
 def isAtomic(tkn):
     return bool(
-        matchFixedTokens(tkn, ["literal", "parenthesis"]) +
+        matchFixedTokens(tkn, ["literal"]) +
         matchNumericalToken(tkn) +
         matchStringToken(tkn) +
-        matchVariableToken(tkn)
+        matchVariableToken(tkn) +
+        int(tkn == "(")
     )
 
 def isOperator(tkn):
@@ -223,7 +225,3 @@ def resolveUnaryMinus(token_list):
             modified_tokens.append(curr_tkn)
 
     return modified_tokens
-    
-print(resolveUnaryMinus(tokenize(preProcessExpr( # tester
-    "3+-4"
-))))
