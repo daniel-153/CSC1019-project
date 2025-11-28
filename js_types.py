@@ -34,6 +34,9 @@ class String(Primitive):
             self.value = str(input_obj) 
         else:
             raise self.ConstructorError(self, input_obj, "invalid_type")
+    
+    def __str__(self):
+        return f"'{self.value}'"
 
 class Number(Primitive):
     def __init__(self, input_obj):
