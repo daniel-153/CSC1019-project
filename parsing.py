@@ -2,11 +2,20 @@ import parse_helpers
 
 def parseExpression(js_str, window):
     js_str = parse_helpers.preProcessExpr(js_str)
+    token_strs = parse_helpers.tokenize(js_str)
+    token_strs = parse_helpers.resolveUnaryMinus(token_strs)
 
+    typed_tokens = parse_helpers.typeTokenList(token_strs)
+    typed_tokens = parse_helpers.resolveVariableRefs(typed_tokens, window)
+
+    parse_helpers.checkParenClosing(typed_tokens)
+    expr_value = parse_helpers.evalExprList(typed_tokens)
+
+    return expr_value
 
 def performDeclaration(js_str, window):
     dec_keyword, js_str = parse_helpers.extractDecKeyword(js_str)
-    var_name, js_str = parse_helpers.extractVarName(js_str)
+    var_name, js_str = parse_helpers.extractDecVarName(js_str)
     
     parse_helpers.checkVariableName(var_name, window)
 
@@ -15,6 +24,8 @@ def performDeclaration(js_str, window):
 
     value = parseExpression(expr, window)
     parse_helpers.createVariable(dec_keyword, var_name, value, window)
+
+    return value
 
 def performAssignment(js_str, window):
     var_name, expr = parse_helpers.extractVarName(js_str)
@@ -30,8 +41,7 @@ def parse(js_line, window):
         eval_result = {}
 
         if parse_helpers.isDeclaration(js_line):
-            performDeclaration(js_line, window)
-            eval_result["value"] = ""
+            eval_result["value"] = performDeclaration(js_line, window)
         elif parse_helpers.isAssignment(js_line):
             eval_result["value"] = performAssignment(js_line, window)
         else:
@@ -39,7 +49,7 @@ def parse(js_line, window):
     except Exception as e:
         eval_result["is_error"] = True
         
-        if getattr(e, "is_js_error"):
+        if getattr(e, "is_js_error", False):
             eval_result["error_msg"] = str(e)
         else:
             eval_result["error_msg"] = "ParsingError: unrecognized or unsupported JavaScript syntax"
