@@ -1,10 +1,12 @@
 import parsing
+import user_interface
 
 def main():    
+    user_interface.displayInfoMessage()
     window = {} # Represents the window object (in browser JS)
     
     while True:
-        inputted_js = input('Enter a line of JavaScript code:')
+        inputted_js = input(">> ")
 
         if inputted_js == 'quit':
             break
