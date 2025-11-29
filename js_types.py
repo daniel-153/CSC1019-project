@@ -30,6 +30,8 @@ class String(Primitive):
                 self.value = input_obj[1:-1]
             else:
                 raise self.ConstructorError(self, input_obj, "invalid_literal")
+        elif isinstance(input_obj, String):
+            self.value = input_obj.value
         elif isinstance(input_obj, Primitive):
             self.value = str(input_obj) 
         else:

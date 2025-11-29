@@ -11,7 +11,7 @@ def arithmetic(operand1, operand2, operator):
         operand1 = js_types.String(operand1)
         operand2 = js_types.String(operand2)
 
-        return js_types.String(operand1.value + operand2.value)
+        return js_types.String(f"'{operand1.value + operand2.value}'")
     else: # both operands must be numbers
         operand1 = js_types.Number(operand1)
         operand2 = js_types.Number(operand2)
