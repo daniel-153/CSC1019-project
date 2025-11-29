@@ -10,7 +10,7 @@ def isDeclaration(js_str):
 
 def isAssignment(js_str):
     for symbol in ["===", "!==", "==", "!=", ">=", ">="]:
-        js_str.replace(symbol, "")
+        js_str = js_str.replace(symbol, "")
 
     js_str = js_str.split("'")[0].split('"')[0]
 
@@ -31,25 +31,38 @@ def extractDecKeyword(dec_str):
     else:
         raise Exception("Invalid JS declaration: initializer not recognized")
     
-    js_str = js_str.replace(dec_keyword, "", 1)
+    dec_str = dec_str.replace(dec_keyword, "", 1)
 
     return dec_keyword, dec_str
 
-def extractVarName(dec_str):
-    dec_str = dec_str.lstrip()
-    var_name = dec_str.split('=')[0].rstrip()
-    dec_str = dec_str.replace(var_name, "", 1).lstrip()
+def extractDecVarName(dec_str):
+    copy_dec_str = dec_str
+    if isAssignment(dec_str):
+        copy_dec_str = dec_str.split("=")[0]
 
-    if dec_str[0] != "=":
-        raise Exception("Invalid JS declaration: missing equals sign")
-    
-    dec_str = dec_str[1:]
+    var_name = copy_dec_str.split(";")[0].strip()
+    dec_str = dec_str.replace(var_name, "", 1).strip()
+
+    if len(dec_str) > 0 and dec_str[0] == "=":
+        dec_str = dec_str[1:]
 
     return var_name, dec_str
 
+def extractVarName(assign_str):
+    assign_str = assign_str.lstrip()
+    var_name = assign_str.split('=')[0].rstrip()
+    assign_str = assign_str.replace(var_name, "", 1).lstrip()
+
+    if assign_str[0] != "=":
+        raise Exception("Invalid JS assignment: missing equals sign")
+    
+    assign_str = assign_str[1:]
+
+    return var_name, assign_str
+
 def preProcessInitExpr(dec_keyword, expr_str):
     if len(expr_str) == 0 and dec_keyword == "const":
-        js_structures.Error("Syntax", "Missing initializer in const declaration")
+        raise js_structures.Error("Syntax", "Missing initializer in const declaration")
     elif len(expr_str) == 0:
         return "undefined"
     else:
@@ -71,7 +84,7 @@ def updateVariableValue(var_name, new_value, window):
 def preProcessExpr(expr_str):
     expr_str = expr_str.strip()
 
-    if expr_str[-1] == ";":
+    if len(expr_str) > 0 and expr_str[-1] == ";":
         expr_str = expr_str[:-1]
 
     # remove whitespace except between quotes
@@ -225,3 +238,166 @@ def resolveUnaryMinus(token_list):
             modified_tokens.append(curr_tkn)
 
     return modified_tokens
+
+def detectToken(tkn_str):
+    match_found = False
+    for TokenType in [
+        js_structures.Identifier,
+        js_structures.Literal, 
+        js_structures.Operator, 
+        js_structures.Parenthesis
+    ]:
+        try:
+            matched_tkn = TokenType(tkn_str)
+            match_found = True
+            break
+        except js_structures.Token.TokenError:
+            pass
+
+    if not match_found:
+        raise js_structures.Error("Syntax", f"invalid token '{tkn_str}'")
+
+    return matched_tkn
+
+def typeTokenList(token_list): # turns literal tokens into JS types
+    typed_list = []
+    for tkn_str in token_list:
+        tkn_type = detectToken(tkn_str)
+
+        if isinstance(tkn_type, js_structures.Literal):
+            typed_list.append(js_types.Auto(tkn_str))
+        else:
+            typed_list.append(tkn_type) 
+
+    return typed_list
+
+def resolveVariableRefs(typed_tokens, window):
+    resolved_tokens = []
+    for token in typed_tokens:
+        if isinstance(token, js_structures.Identifier):
+            if token.tkn_str in window:
+                resolved_tokens.append(window[token.tkn_str].value)
+            else:
+                raise js_structures.Error("Reference", f"'{token.tkn_str}' is not defined")
+        else:
+            resolved_tokens.append(token)
+
+    return resolved_tokens
+
+def findClosingParen(typed_tokens, index):
+    if not (
+        isinstance(typed_tokens[index], js_structures.Parenthesis) and
+        typed_tokens[index].tkn_str == "("
+    ):
+        raise Exception("Provided index is not an opening paren")
+
+    depth = 1
+    sub_index = index + 1
+    while sub_index < len(typed_tokens):
+        if isinstance(typed_tokens[sub_index], js_structures.Parenthesis):
+            tkn = typed_tokens[sub_index].tkn_str
+            if tkn == "(":
+                depth += 1
+            elif tkn == ")":
+                depth -= 1
+                if depth == 0:
+                    return sub_index
+
+        sub_index += 1
+
+    return -1
+
+def checkParenClosing(typed_tokens):
+    depth = 0
+    for token in typed_tokens:
+        if isinstance(token, js_structures.Parenthesis):
+            if token.tkn_str == "(":
+                depth += 1
+            elif token.tkn_str == ")":
+                depth -= 1
+        
+        if depth < 0:
+            raise js_structures.Error("Syntax", "Unexpected token ')'")
+    
+    if depth != 0:
+        raise js_structures.Error("Syntax", "Unexpected end of input")
+    
+def detectOperatorType(typed_tkn):
+    if isinstance(typed_tkn, js_structures.Operator):
+        if matchFixedTokens(typed_tkn.tkn_str, ["arithmetic"]):
+            return "arithmetic"
+        elif matchFixedTokens(typed_tkn.tkn_str, ["comparison"]):
+            return "comparison"
+
+    raise Exception(f"Provided token '{typed_tkn.tkn_str}' is not an operator")
+
+def getOrderedOperators(flat_expr): # assumes expr is properly ordered (val op val op val...)
+    operators = [item for index, item in enumerate(flat_expr) if index % 2 == 1]
+    sorted_ops = []
+
+    while len(operators) > 0:
+        highest_prec = max(operators, key = lambda operator: operator.power).power
+        direction = js_structures.Operator.binding_powers[highest_prec]["direction"]
+
+        updated_ops = []
+        iter_ops = operators if direction > 0 else list(reversed(operators))
+
+        for op in iter_ops:
+            if op.power == highest_prec:
+                sorted_ops.append(op)
+            else:
+                updated_ops.append(op)
+
+        operators = updated_ops if direction > 0 else list(reversed(updated_ops))
+
+    return sorted_ops
+
+def evalFlatExpr(flat_expr): # list of only primitives and operators (correct order already checked)
+    for operator in getOrderedOperators(flat_expr):
+        found_idx = flat_expr.index(operator)
+        operand1, operator, operand2 = flat_expr[found_idx - 1:found_idx + 2]
+        operator_type = detectOperatorType(operator)
+
+        value = getattr(js_operators, operator_type)(operand1, operand2, operator.tkn_str)
+
+        flat_expr = flat_expr[:found_idx - 1] + [value] + flat_expr[found_idx + 2:]
+
+    return flat_expr[0]
+
+def evalExprList(expr_list): # list of primitives, operator tokens, and paren tokens (paren closing already checked before this runs)
+    if len(expr_list) == 0:
+        raise Exception("Cannot evaluate empty expression")
+    
+    # recursively eval parens until the expression is just atoms and operators
+    flat_expr = []
+    while len(expr_list) > 0:
+        curr_entry = expr_list[0]
+
+        if (
+            isinstance(curr_entry, js_types.Primitive) or
+            isinstance(curr_entry, js_structures.Operator)
+        ):
+            flat_expr.append(expr_list.pop(0))
+        elif isinstance(curr_entry, js_structures.Parenthesis):
+            closing_idx = findClosingParen(expr_list, 0)
+            flat_expr.append(evalExprList(expr_list[1:closing_idx]))
+            expr_list = expr_list[closing_idx + 1:]
+        else:
+            raise Exception(f"Unexpected expression item '{curr_entry}' type of '{type(curr_entry)}'")
+        
+    # check if expr is atoms and operators (in correct order)
+    correct_order = True
+    for idx, item in enumerate(flat_expr):
+        if idx % 2 == 0:
+            if not isinstance(item, js_types.Primitive):
+                correct_order = False
+                break
+        else:
+            if not isinstance(item, js_structures.Operator): 
+                correct_order = False
+                break
+
+    if not correct_order or len(flat_expr) % 2 != 1:
+        raise js_structures.Error("Syntax", "Invalid expression")
+    
+    return evalFlatExpr(flat_expr)
