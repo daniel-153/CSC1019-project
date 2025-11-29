@@ -9,7 +9,7 @@ def isDeclaration(js_str):
     return js_str.startswith(("let ", "var ", "const "))
 
 def isAssignment(js_str):
-    for symbol in ["===", "!==", "==", "!=", ">=", ">="]:
+    for symbol in ["===", "!==", "==", "!=", ">=", "<="]:
         js_str = js_str.replace(symbol, "")
 
     js_str = js_str.split("'")[0].split('"')[0]
@@ -185,7 +185,7 @@ def tokenize(expr_str):
                 expr_str = expr_str[len(tkn_buffer) - 1:]
                 tkn_buffer = ""
                 break
-            elif num_matches == 1 and idx == len(expr_str) - 1:
+            elif num_matches >= 1 and idx == len(expr_str) - 1:
                 tokens.append(tkn_buffer)
                 tkn_buffer = expr_str = ""
             
