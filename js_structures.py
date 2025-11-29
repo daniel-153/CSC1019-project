@@ -52,22 +52,22 @@ class Identifier(Token):
             raise self.TokenError(self, tkn_str)
 
 class Operator(Token):
-    binding_powers = { # for pratt parsing
-        1: {"symbols": ["||"], "bias": 0.1},
-        2: {"symbols": ["&&"], "bias": 0.1},
-        3: {"symbols": ["==", "!=", "===", "!=="], "bias": 0.1},
-        4: {"symbols": [">", "<", ">=", "<="], "bias": 0.1},
-        5: {"symbols": ["+", "-"], "bias": 0.1},
-        6: {"symbols": ["*", "/", "%"]},
-        7: {"symbols": ["**"], "bias": -0.1}
+    binding_powers = { # for operator precedence
+        1: {"symbols": ["||"], "direction": 1},
+        2: {"symbols": ["&&"], "direction": 1},
+        3: {"symbols": ["==", "!=", "===", "!=="], "direction": 1},
+        4: {"symbols": [">", "<", ">=", "<="], "direction": 1},
+        5: {"symbols": ["+", "-"], "direction": 1},
+        6: {"symbols": ["*", "/", "%"], "direction": 1},
+        7: {"symbols": ["**"], "direction": -1}
     }
 
     def __init__(self, tkn_str):
         super().__init__(tkn_str)
         match_found = False
         match_power = None
-        for power, symbols in self.binding_powers.items():
-            if tkn_str in symbols:
+        for power, entry in self.binding_powers.items():
+            if tkn_str in entry["symbols"]:
                 match_found = True
                 match_power = power
                 break
@@ -75,11 +75,12 @@ class Operator(Token):
         if not match_found:
             raise self.TokenError(self, tkn_str)
         
-        self.binding_power = (match_power, match_power + self.binding_powers[match_power]["bias"])
+        self.power = match_power
+        self.direction = self.binding_powers[match_power]["direction"]
         
 class Parenthesis(Token): 
     def __init__(self, tkn_str):
         super().__init__(tkn_str)
-        
+
         if not tkn_str in ["(", ")"]:
             raise self.TokenError(self, tkn_str)
