@@ -78,6 +78,8 @@ class Number(Primitive):
                     self.value = 1
                 else:
                     self.value = 0
+            elif isinstance(input_obj, Null):
+                self.value = 0
             elif isinstance(input_obj, Number):
                 self.value = input_obj.value
             else: # can't convert anything else to a number
