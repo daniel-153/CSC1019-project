@@ -57,4 +57,4 @@ def parse(js_line, window):
         if eval_result.get("is_error"):
             return "\u29BB " + str(eval_result.get("error_msg"))
         else:
-            return eval_result.get("value")
+            return "<< " + str(eval_result.get("value"))
