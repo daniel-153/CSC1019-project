@@ -1,9 +1,15 @@
 import parsing
 import user_interface
 
+"""
+File purpose: main file that brings all
+the other modules together. It handles
+the main loop for user input and output.
+"""
+
 def main():    
     user_interface.displayInfoMessage()
-    window = {} # Represents the window object (in browser JS)
+    window = {} # mimics the window object (in browser JS)
     
     while True:
         inputted_js = input("[Input JS] >> ")

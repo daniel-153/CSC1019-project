@@ -2,6 +2,14 @@ import js_structures
 import js_types
 import js_operators
 
+"""
+File purpose: contain all the small helper
+functions for parsing. Most are responsible
+for string matching and tokenizing (making sense
+of the JS code). The last two functions do
+the evaluation (with recursion).
+"""
+
 def isDeclaration(js_str):
     js_str = js_str.lstrip()
     

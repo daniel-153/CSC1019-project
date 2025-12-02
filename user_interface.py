@@ -1,3 +1,12 @@
+"""
+File purpose: organize code that helps
+the user with input/output (unrelated
+to the technical parsing functions).
+File was made to keep main.py clean and 
+since the welcome function doesn't belong
+anywhere else.
+"""
+
 def displayInfoMessage():
     print(
 """

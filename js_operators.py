@@ -1,5 +1,15 @@
 import js_types
 
+"""
+File purpose: has all the logic for
+operations in JS (arithmetic and
+comparison). JS has a lot of type
+conversion rules (it allows operations
+with almost anything by converting types),
+so this file needs to keep track of all
+those rules and enforce them.
+"""
+
 # arithmetic_symbols: ["+", "-", "*", "/", "%", "**"]
 def arithmetic(operand1, operand2, operator):
     if ( # operation is "+" and at least one operand is a String

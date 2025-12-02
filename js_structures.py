@@ -1,5 +1,14 @@
 import js_types
 
+"""
+File purpose: defines some classes that
+are used for parsing. Error and Variable
+are used for making those structures in JS.
+The Token classes are used for taking a raw
+string like "x * 3 + 2" and sorting its pieces
+into categories [x, *, 3, +, 2].
+"""
+
 class Error(Exception):
     def __init__(self, error_type, description):
         self.error_type = error_type

@@ -1,5 +1,13 @@
 import parse_helpers
 
+"""
+File purpose: has the main parsing functions.
+The four functions in this module use the 
+helpers in parse_helpers to eval the JS.
+The last function (parse) decides which of
+the first 3 to call and interacts with main.
+"""
+
 def parseExpression(js_str, window):
     js_str = parse_helpers.preProcessExpr(js_str)
     token_strs = parse_helpers.tokenize(js_str)

@@ -1,3 +1,13 @@
+"""
+File purpose: defines the "primitive"
+types in JS and conversions between them.
+The classes below try to mimic String, Number,
+Boolean, Undefined, and Null. These inherit
+from the Primitive class. The Auto class
+tries to detect a type based off of a literal
+(similar to auto in c++).
+"""
+
 class Primitive: # base for all other types, used to centralize some features
     def __init__(self, input_obj):
         self.value = input_obj
