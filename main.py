@@ -6,13 +6,13 @@ def main():
     window = {} # Represents the window object (in browser JS)
     
     while True:
-        inputted_js = input(">> ")
+        inputted_js = input("[Input JS] >> ")
 
-        if inputted_js == 'quit':
+        if inputted_js == "quit":
             break
         else:
             eval_value = parsing.parse(inputted_js, window)
-            print(eval_value)
+            print("[ Output ] <<", eval_value)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
